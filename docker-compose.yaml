@@ -1,0 +1,44 @@
+networks:
+  application:
+    driver: bridge
+
+services:
+  app:
+    build:
+      context: ./auth-app
+      dockerfile: Dockerfile
+    container_name: auth-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./auth-app:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=pgdb
+    networks:
+      - application
+    working_dir: /var/www/html
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        composer install && php artisan key:generate && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
+  db:
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USERNAME:-postgres} # Fallback default
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password} # Fallback default
+      - POSTGRES_DB=${POSTGRES_DATABASE:-auth_db} # Fallback default
+    networks:
+      - application
+    container_name: pgdb
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME:-postgres}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
