@@ -23,7 +23,9 @@ services:
     entrypoint: [ "/bin/sh", "-c" ]
     command:
       - |
-        composer install && php artisan key:generate && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
+        php artisan key:generate && \
+        php artisan migrate --force && \
+        php artisan serve --host=0.0.0.0 --port=8000
   db:
     image: postgres:17
     ports:
@@ -31,9 +33,9 @@ services:
     volumes:
       - ./data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=${POSTGRES_USERNAME:-postgres} # Fallback default
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password} # Fallback default
-      - POSTGRES_DB=${POSTGRES_DATABASE:-auth_db} # Fallback default
+      - POSTGRES_USER=${POSTGRES_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DATABASE:-auth_db}
     networks:
       - application
     container_name: pgdb

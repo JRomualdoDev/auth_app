@@ -27,18 +27,29 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
 # Install Composer
 COPY --from=composer/composer:latest-bin composer /usr/bin/composer
 
-# Copy existing application directory contents
+# Install Node.js and npm
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm
+
+# Set the working directory
+WORKDIR /var/www/html
+
+# Copy dependency files first for caching
+COPY package*.json vite.config.js composer.json composer.lock ./
 COPY . /var/www/html/
 
-# Set ownership and permissions for the /var/www/html directory to www-data
-RUN chown -R www-data:www-data /var/www/html/
+# Install Composer and Node.js dependencies, then build Vite
+RUN composer install --no-dev --optimize-autoloader \
+    && npm install \
+    && npm run build \
+    && chown -R www-data:www-data /var/www/html/
 
 # Switch to www-data user
 USER www-data
 
-# Expose the server port
+# Expose PHP-FPM port
 EXPOSE 8000
 
-# Default command to start the server (overridden by docker-compose.yml)
-# CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Start PHP-FPM
 CMD ["php-fpm"]
